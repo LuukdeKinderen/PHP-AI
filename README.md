@@ -7,7 +7,7 @@ To stay within the constraints of the AI semester, I'm going to create an AI app
 At the end of the open programme, I will have a working PHP Laravel MVC application that allows you to make predictions. 
 ## Planning
 | Week 1 |                                                                                                              |
-|:------:|:------------------------------------------------------------------------------------------------------------:|
+|:------:|:-------------------------------------------------------------------------------------------------------------|
 | Dag 1  | Installing PHP and making my first “hello world” poc                                                         |
 | Dag 2  | Learning more about the MCV pattern in Laravel                                                               |
 | Dag 3  | Learning more about the MCV pattern in Laravel                                                               |
@@ -17,7 +17,7 @@ At the end of the open programme, I will have a working PHP Laravel MVC applicat
 
 
 | Week 2 |                                                                                                              |
-|:------:|:------------------------------------------------------------------------------------------------------------:|
+|:------:|:-------------------------------------------------------------------------------------------------------------|
 | Dag 1  | Finding an interesting dataset and make a simple EDA (also using PHP?)                                       |
 | Dag 2  | Finding a good way to make the EDA visible in the php project                                                |
 | Dag 3  | Start prediction phase.                                                                                      |
