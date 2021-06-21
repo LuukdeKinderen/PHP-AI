@@ -22,13 +22,6 @@ Route::get('/about', function () {
     return view('about');
 });
 
-// Route::get('/predictions', function () {
-//     return view('prediction.predictions');
-// });
-
-Route::get('/model', [ModelController::class, 'index']);
-Route::post('/model', [ModelController::class, 'predict']);
-
 
 Route::post('/csv', [ModelController::class, 'uploadCSV']);
 Route::post('/selectRows', [ModelController::class, 'selectRows']);
