@@ -52,6 +52,10 @@ class ModelController extends Controller
 
         $data = $_SESSION['csv_data'];
 
+
+
+
+
         $model = new MachineLearningModel();
 
 
@@ -67,7 +71,57 @@ class ModelController extends Controller
             $colOptions[$ind] = $request->input($col);
         }
 
+
+        $values = array();
+        $uniqueValues = array();
         $parseOptions = array();
+
+        foreach ($model->getColNames() as $colInd => $colname) {
+            $values[$colInd] = array();
+            $uniqueValues[$colInd] = array();
+            $parseOptions[$colInd] = array();
+        }
+
+        foreach ($model->getData() as $rowInd => $row) {
+            foreach ($row as $ind => $val) {
+
+                array_push($values[$ind], $val);
+
+                if (!in_array($val, $uniqueValues[$ind])) {
+                    array_push($uniqueValues[$ind], $val);
+                }
+            }
+        }
+
+        foreach ($uniqueValues as $colInd => $col) {
+            $numeric = true;
+            $hasMissing = false;
+            foreach ($uniqueValues[$colInd] as $val) {
+                if ($val == '') {
+                    $hasMissing = true;
+                } elseif (!is_numeric($val)) {
+                    $numeric = false;
+                }
+            }
+
+            $mean = '';
+            if ($numeric) {
+                $filterd = array_filter($values[$colInd]);
+                $mean = array_sum($filterd) / count($filterd);
+            } else {
+
+                $valueCounts = array_count_values($values[$colInd]);
+                arsort($valueCounts);
+                $mean = array_keys($valueCounts)[0];
+            }
+
+            $parseOptions[$colInd]['numeric'] = $numeric;
+            $parseOptions[$colInd]['mean'] = $mean;
+        }
+
+        // dd($values, $parseOptions, $uniqueValues);
+
+
 
         $x = array();
         $y = array();
@@ -84,14 +138,18 @@ class ModelController extends Controller
 
                     $parsedVal = $val;
 
-                    if(gettype($parsedVal) != 'integer'){
-                        $parsedVal = (int)$parsedVal;
-                        // if(array_key_exists($ind, $parseOptions)){
-
-                        // } else {
-                            
-                        // }
+                    if ($parsedVal == '') {
+                        $parsedVal = $parseOptions[$ind]['mean'];
                     }
+
+                    if ($parseOptions[$ind]['numeric']) {
+                        $parsedVal = (float)$parsedVal;
+                    } else {
+                        $parsedVal = array_search($parsedVal, $uniqueValues[$ind]);
+                    }
+
+                    // $parsedVal = (float)$parsedVal;
+
                     $localX[$xCount] = $parsedVal;
                     $xCount += 1;
                 } elseif ($colOptions[$ind] == 'y') {
@@ -105,7 +163,10 @@ class ModelController extends Controller
             $y[$rowInd] = $localY;
         }
 
+        // dd($x, $y);
 
+        $samples = [[1, 3], [1, 4], [2, 4], [3, 1], [4, 1], [4, 2]];
+        $labels = ['a', 'a', 'a', 'b', 'b', 'b'];
 
         $dataset = new ArrayDataset($x, $y);
         // $dataset = new ArrayDataset($samples,$labels);
@@ -128,10 +189,14 @@ class ModelController extends Controller
         $actual = $dataset->getTestLabels();
 
 
-        dd($x, $y,//$samples,$labels, $dataset->getTestSamples()[0],
+        dd(
+            $x,
+            $y, //$samples,$labels, $dataset->getTestSamples()[0],
 
-       $classifier->predict($dataset->getTestSamples()),$actual
-      //   $colOptions, $request, $model->getData()[0],  $x, $y
+            $classifier->predict($dataset->getTestSamples()),
+            $actual
+            // $actual
+            //   $colOptions, $request, $model->getData()[0],  $x, $y
         );
     }
 }
