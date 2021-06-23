@@ -38,6 +38,8 @@
     <button type="submit" class="btn btn-primary mb-3">Submit</button>
 
 
+    <h3>Select Colums to use</h3>
+    <p>Where X are samples and Y is the lablel to predict.</p>
 
     <table class="table table-striped table-bordered table-sm">
 

@@ -6,6 +6,13 @@ use App\Models\MachineLearningModel;
 use App\Models\CsvImportRequest;
 use Illuminate\Http\Request;
 
+use Phpml\Classification\SVC;
+use Phpml\SupportVectorMachine\Kernel;
+
+use Phpml\Classification\KNearestNeighbors;
+use Phpml\CrossValidation\RandomSplit;
+use Phpml\Dataset\ArrayDataset;
+
 class ModelController extends Controller
 {
     public function index()
@@ -60,24 +67,37 @@ class ModelController extends Controller
             $colOptions[$ind] = $request->input($col);
         }
 
-        
+        $parseOptions = array();
+
         $x = array();
         $y = array();
         foreach ($model->getData() as $rowInd => $row) {
             $localX = array();
             $xCount = 0;
 
-            $localY = array();
-            $yCount = 0;
+            $localY = "";
+            // $yCount = 0;
 
 
-            foreach($row as $ind => $val){
-                if($colOptions[$ind] == 'x'){
-                    $localX[$xCount] = $val;
+            foreach ($row as $ind => $val) {
+                if ($colOptions[$ind] == 'x') {
+
+                    $parsedVal = $val;
+
+                    if(gettype($parsedVal) != 'integer'){
+                        $parsedVal = (int)$parsedVal;
+                        // if(array_key_exists($ind, $parseOptions)){
+
+                        // } else {
+                            
+                        // }
+                    }
+                    $localX[$xCount] = $parsedVal;
                     $xCount += 1;
-                }elseif($colOptions[$ind] == 'y'){
-                    $localY[$yCount] = $val;
-                    $yCount += 1;
+                } elseif ($colOptions[$ind] == 'y') {
+                    $localY = $val;
+                    // $localY[$yCount] = $val;
+                    // $yCount += 1;
                 }
             }
 
@@ -85,6 +105,33 @@ class ModelController extends Controller
             $y[$rowInd] = $localY;
         }
 
-        dd($colOptions, $request, $model->getData()[0],  $x,$y);
+
+
+        $dataset = new ArrayDataset($x, $y);
+        // $dataset = new ArrayDataset($samples,$labels);
+        $dataset = new RandomSplit($dataset, 0.3, 1234);
+
+        // train group
+        $dataset->getTrainSamples();
+        $dataset->getTrainLabels();
+
+
+        $classifier = new KNearestNeighbors();
+        $classifier->train($dataset->getTrainSamples(), $dataset->getTrainLabels());
+
+
+        // // test group
+        // $dataset->getTestSamples();
+        // $dataset->getTestLabels();
+
+        // $prediction = $classifier->predict($dataset->getTestSamples());
+        $actual = $dataset->getTestLabels();
+
+
+        dd($x, $y,//$samples,$labels, $dataset->getTestSamples()[0],
+
+       $classifier->predict($dataset->getTestSamples()),$actual
+      //   $colOptions, $request, $model->getData()[0],  $x, $y
+        );
     }
 }
