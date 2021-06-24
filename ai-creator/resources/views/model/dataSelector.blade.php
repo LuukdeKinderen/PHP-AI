@@ -6,20 +6,7 @@
 <form action='/selectRows' method="POST" enctype="multipart/form-data">
     @csrf
 
-    <div class="form-group">
-        <label for='split'>Split</label>
-        <div class="input-group">
-            <input class="form-control @error('split') is-invalid @enderror" type="number" value="{{old('split') ?? $model->getSplit()}}" name="split" id="split">
-            <div class="input-group-append">
-                <span class="input-group-text">%</span>
-            </div>
-        </div>
-        @error('split')
-        <div class="text-danger">
-            {{$message}}
-        </div>
-        @enderror
-    </div>
+
 
     <div class="form-group">
         <label for="MLmodel">Classifier</label>
@@ -35,7 +22,22 @@
         @enderror
     </div>
 
-    <button type="submit" class="btn btn-primary mb-3">Submit</button>
+    <div class="form-group">
+        <label for='split'>Split</label>
+        <div class="input-group">
+            <input class="form-control @error('split') is-invalid @enderror" type="number" value="{{old('split') ?? $model->getSplit()}}" name="split" id="split">
+            <div class="input-group-append">
+                <span class="input-group-text">%</span>
+            </div>
+        </div>
+        @error('split')
+        <div class="text-danger">
+            {{$message}}
+        </div>
+        @enderror
+    </div>
+
+    <button type="submit" class="btn btn-primary mb-3">Predict!</button>
 
 
     <h3>Select Colums to use</h3>

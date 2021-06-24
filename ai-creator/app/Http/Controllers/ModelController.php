@@ -16,6 +16,9 @@ use Phpml\Classification\NaiveBayes;
 use Phpml\Classification\SVC;
 use Phpml\CrossValidation\RandomSplit;
 use Phpml\Dataset\ArrayDataset;
+use Phpml\Metric\Accuracy;
+use Phpml\Metric\ClassificationReport;
+use Phpml\Metric\ConfusionMatrix;
 use Phpml\Regression\LeastSquares;
 
 class ModelController extends Controller
@@ -44,22 +47,21 @@ class ModelController extends Controller
         return view('model.dataSelector', ['model' => $model]);
     }
 
+    public function tryAgain(){
+        session_start();
+        $data = $_SESSION['csv_data'];
+
+        $model = new MachineLearningModel();
+        $model->setData($data);
+
+        return view('model.dataSelector', ['model' => $model]);
+    }
+
     public function selectRows(Request $request)
     {
 
-        // $this->validate($request,[
-        //     'split' => 'required',
-        //     'MLmodel' => 'required',
-        // ]);
-
-
         session_start();
-
         $data = $_SESSION['csv_data'];
-
-
-
-
 
         $model = new MachineLearningModel();
 
@@ -77,143 +79,73 @@ class ModelController extends Controller
         }
 
         $model->setColOptions($colOptions);
+        $parseOptions = $model->createParseOptions();
+        [$x, $y] =  $model->getCleanedData($parseOptions);
 
 
 
-        $values = array();
-        $uniqueValues = array();
-        $parseOptions = array();
 
-        foreach ($model->getColNames() as $colInd => $colname) {
-            $values[$colInd] = array();
-            $uniqueValues[$colInd] = array();
-            $parseOptions[$colInd] = array();
-        }
-
-        foreach ($model->getData() as $rowInd => $row) {
-            foreach ($row as $ind => $val) {
-
-                array_push($values[$ind], $val);
-
-                if (!in_array($val, $uniqueValues[$ind])) {
-                    array_push($uniqueValues[$ind], $val);
-                }
-            }
-        }
-
-        foreach ($uniqueValues as $colInd => $col) {
-            $numeric = true;
-            foreach ($uniqueValues[$colInd] as $val) {
-                if (!is_numeric($val)) {
-                    $numeric = false;
-                }
-            }
-
-            $mean = '';
-            if ($numeric) {
-                $filterd = array_filter($values[$colInd]);
-                $mean = array_sum($filterd) / count($filterd);
-            } else {
-
-                $valueCounts = array_count_values($values[$colInd]);
-                arsort($valueCounts);
-                $mean = array_keys($valueCounts)[0];
-            }
-
-            $parseOptions[$colInd]['numeric'] = $numeric;
-            $parseOptions[$colInd]['mean'] = $mean;
-        }
-
-        // dd($values, $parseOptions, $uniqueValues);
-
-
-
-        $x = array();
-        $y = array();
-        foreach ($model->getData() as $rowInd => $row) {
-            $localX = array();
-            $xCount = 0;
-
-            $localY = "";
-            // $yCount = 0;
-
-
-            foreach ($row as $ind => $val) {
-                if ($colOptions[$ind] == 'x') {
-
-                    $parsedVal = $val;
-
-                    if ($parsedVal == '') {
-                        $parsedVal = $parseOptions[$ind]['mean'];
-                    }
-
-                    if ($parseOptions[$ind]['numeric']) {
-                        $parsedVal = (float)$parsedVal;
-                    } else {
-                        $parsedVal = array_search($parsedVal, $uniqueValues[$ind]);
-                    }
-
-                    // $parsedVal = (float)$parsedVal;
-
-                    $localX[$xCount] = $parsedVal;
-                    $xCount += 1;
-                } elseif ($colOptions[$ind] == 'y') {
-
-                    $parsedVal = $val;
-
-                    if ($parsedVal == '') {
-                        $parsedVal = $parseOptions[$ind]['mean'];
-                    }
-
-                    if ($parseOptions[$ind]['numeric']) {
-                        $parsedVal = (int)$parsedVal;
-                    } else {
-                        $parsedVal = array_search($parsedVal, $uniqueValues[$ind]);
-                    }
-
-                    $localY = $parsedVal;
-                    // $localY[$yCount] = $val;
-                    // $yCount += 1;
-                }
-            }
-
-            $x[$rowInd] = $localX;
-            $y[$rowInd] = $localY;
-        }
-
-        // dd($x, $y);
-
-        $samples = [[1, 3], [1, 4], [2, 4], [3, 1], [4, 1], [4, 2]];
-        $labels = ['a', 'a', 'a', 'b', 'b', 'b'];
-
+        // create dataset
         $dataset = new ArrayDataset($x, $y);
-        // $dataset = new ArrayDataset($samples,$labels);
-        $dataset = new RandomSplit($dataset, 0.3, 1234);
+        $dataset = new RandomSplit($dataset, $model->getSplit() / 100, 1234);
+        // $actualdataset = new ArrayDataset($x, $y);
+        // $dataset = new RandomSplit($dataset, $model->getSplit() / 100, 1234);
 
-        // train group
-        $dataset->getTrainSamples();
-        $dataset->getTrainLabels();
+        $classifier = $model->getClassifier();
 
 
-        // $classifier = new KNearestNeighbors();
-        $classifier = new NaiveBayes();
         $classifier->train($dataset->getTrainSamples(), $dataset->getTrainLabels());
 
 
-        // // test group
-        // $dataset->getTestSamples();
-        // $dataset->getTestLabels();
+        $unparsedLables = $model->getUnparsedLabel();
 
-        // $prediction = $classifier->predict($dataset->getTestSamples());
+
+        // dd($unparsedLables);
+
         $actual = $dataset->getTestLabels();
+        if ($model->needToParse()) {
+            foreach ($actual as $actualInd => $actualVal) {
+                $actual[$actualInd] = $unparsedLables[$actualVal];
+            }
+        }
 
 
+        $predicted = $classifier->predict($dataset->getTestSamples());
+        if ($model->needToParse()) {
+            foreach ($predicted as $predictedInd => $predictedVal) {
+                $predicted[$predictedInd] = $unparsedLables[$predictedVal];
+            }
+        }
+        $report = new ClassificationReport($actual, $predicted);
+
+        return view('prediction.result', [
+            'model' => $model,
+            'accuracy' => Accuracy::score($actual, $predicted),
+            'report' => $report,
+        ]);
+
+        // $mappedMatrix = array();
+        // foreach ($matrix as $matrixColInd => $matrixCol) {
+        //     $mappedMatrix[$unparsedLables[$matrixColInd]] = array();
+        //     foreach ($matrixCol as $matrixRowInd => $matrixRow) {
+        //         echo ($unparsedLables[$matrixRowInd]);
+        //         echo ($matrixRow);
+
+        //         // $mappedMatrix[$unparsedLables[$matrixColInd]][$unparsedLables[$matrixRowInd]] = $matrixRow;
+        //         // $matrixCol[$unparsedLables[$matrixRowInd]] = $matrixRow;
+        //     }
+        // }
         dd(
-            $x,
-            $y, //$samples,$labels, $dataset->getTestSamples()[0],
+            // $x,
+            // $y, //$samples,$labels, $dataset->getTestSamples()[0],
 
-            $classifier->predict($dataset->getTestSamples()),
-            $actual
+            $predicted,
+            $actual,
+            Accuracy::score($actual, $predicted),
+            // $mappedMatrix,
+            // $matrix,
+            $report,
+            $unparsedLables
             // $actual
             //   $colOptions, $request, $model->getData()[0],  $x, $y
         );

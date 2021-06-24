@@ -25,3 +25,5 @@ Route::get('/about', function () {
 
 Route::post('/csv', [ModelController::class, 'uploadCSV']);
 Route::post('/selectRows', [ModelController::class, 'selectRows']);
+
+Route::get('/again',[ModelController::class, 'tryAgain']);
