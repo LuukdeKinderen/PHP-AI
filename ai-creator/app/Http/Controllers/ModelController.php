@@ -1,17 +1,22 @@
 <?php
 
+// require '../../../vendor/autoload.php';
+
 namespace App\Http\Controllers;
 
 use App\Models\MachineLearningModel;
 use App\Models\CsvImportRequest;
 use Illuminate\Http\Request;
-
-use Phpml\Classification\SVC;
+use Phpml\Association\Apriori;
+use Phpml\Regression\SVR;
 use Phpml\SupportVectorMachine\Kernel;
 
 use Phpml\Classification\KNearestNeighbors;
+use Phpml\Classification\NaiveBayes;
+use Phpml\Classification\SVC;
 use Phpml\CrossValidation\RandomSplit;
 use Phpml\Dataset\ArrayDataset;
+use Phpml\Regression\LeastSquares;
 
 class ModelController extends Controller
 {
@@ -64,12 +69,15 @@ class ModelController extends Controller
         $model->setData($data);
 
         $model->setSplit($request->input('split'));
-        $model->setModel($request->input('MLmodel'));
+        $model->setClassifier($request->input('MLmodel'));
 
         $colOptions = array();
         foreach ($model->getColNames() as $ind => $col) {
             $colOptions[$ind] = $request->input($col);
         }
+
+        $model->setColOptions($colOptions);
+
 
 
         $values = array();
@@ -95,11 +103,8 @@ class ModelController extends Controller
 
         foreach ($uniqueValues as $colInd => $col) {
             $numeric = true;
-            $hasMissing = false;
             foreach ($uniqueValues[$colInd] as $val) {
-                if ($val == '') {
-                    $hasMissing = true;
-                } elseif (!is_numeric($val)) {
+                if (!is_numeric($val)) {
                     $numeric = false;
                 }
             }
@@ -153,7 +158,20 @@ class ModelController extends Controller
                     $localX[$xCount] = $parsedVal;
                     $xCount += 1;
                 } elseif ($colOptions[$ind] == 'y') {
-                    $localY = $val;
+
+                    $parsedVal = $val;
+
+                    if ($parsedVal == '') {
+                        $parsedVal = $parseOptions[$ind]['mean'];
+                    }
+
+                    if ($parseOptions[$ind]['numeric']) {
+                        $parsedVal = (int)$parsedVal;
+                    } else {
+                        $parsedVal = array_search($parsedVal, $uniqueValues[$ind]);
+                    }
+
+                    $localY = $parsedVal;
                     // $localY[$yCount] = $val;
                     // $yCount += 1;
                 }
@@ -177,7 +195,8 @@ class ModelController extends Controller
         $dataset->getTrainLabels();
 
 
-        $classifier = new KNearestNeighbors();
+        // $classifier = new KNearestNeighbors();
+        $classifier = new NaiveBayes();
         $classifier->train($dataset->getTrainSamples(), $dataset->getTrainLabels());
 
 

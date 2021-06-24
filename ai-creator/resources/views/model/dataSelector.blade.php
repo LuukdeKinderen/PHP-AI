@@ -22,9 +22,9 @@
     </div>
 
     <div class="form-group">
-        <label for="MLmodel">Model</label>
+        <label for="MLmodel">Classifier</label>
         <select class="form-control @error('MLmodel') is-invalid @enderror" name="MLmodel" id="MLmodel">
-            @foreach ($model->getModelOptions() as $modelOption)
+            @foreach ($model->getClassifierOptions() as $modelOption)
             <option value='{{$modelOption}}' <?= old('MLmodel') == '{{$modelOption}}' ? ' selected="selected"' : ''; ?>>{{$modelOption}}</option>
             @endforeach
         </select>

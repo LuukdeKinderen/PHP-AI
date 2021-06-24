@@ -10,32 +10,18 @@ class MachineLearningModel extends Model
     use HasFactory;
 
     public $split = 33;
-    public $selectedModel;
+    public $classifier;
 
     public $data;
     public $colNames;
+    public $colOptions;
 
-    public $modelOptions = [
-        'SVC',
-        'k-Nearest Neighbors',
-        'Naive Bayes',
-        'SVR',
-        'k-Means'
-    ];
-
-    public function getModelOptions()
+    public function getClassifierOptions()
     {
-        return $this->modelOptions;
-    }
-
-    public function getSplit()
-    {
-        return $this->split;
-    }
-
-    public function getModel()
-    {
-        return $this->selectedModel;
+        return [
+            'k-Nearest Neighbors',
+            'Naive Bayes'
+        ];
     }
 
     public function getData()
@@ -55,17 +41,23 @@ class MachineLearningModel extends Model
         $this->colNames = $colNames;
     }
 
+    public function getSplit(){
+        return $this->split;
+    }
+
     public function setSplit($split){
         $this->split = $split;
     }
 
-    public function setModel($selectedModel){
-        $this->selectedModel = $selectedModel;
+    public function setClassifier($classifier){
+        $this->$classifier = $classifier;
     }
 
-    // public function removeColNames(){
-    //     echo(gettype($data));
-    //     // array_shift($data);
-    // }
+    public function setColOptions($colOptions){
+        $this->colOptions = $colOptions;
+    }
+
+
+
 
 }
