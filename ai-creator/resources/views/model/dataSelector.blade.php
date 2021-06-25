@@ -2,12 +2,10 @@
 
 @section('content')
 <h1>Data Selector page</h1>
-
+<h2>Step 2</h2>
+<p>Select a classification model and define the percentage that becomes test data.</p>
 <form action='/selectRows' method="POST" enctype="multipart/form-data">
     @csrf
-
-
-
     <div class="form-group">
         <label for="MLmodel">Classifier</label>
         <select class="form-control @error('MLmodel') is-invalid @enderror" name="MLmodel" id="MLmodel">
@@ -37,11 +35,10 @@
         @enderror
     </div>
 
-    <button type="submit" class="btn btn-primary mb-3">Predict!</button>
 
 
-    <h3>Select Colums to use</h3>
-    <p>Where X are samples and Y is the lablel to predict.</p>
+    <h2>Step 3</h2>
+    <p>Select which columns you want to use. Here 'drop' is removed, 'Y' becomes the label that is predicted and 'X' are the attributes used to make the prediction. Missing data is filled with the average value when the column is numeric. If this is not possible then the most frequent value from the column is used. </p>
 
     <table class="table table-striped table-bordered table-sm">
 
@@ -69,7 +66,19 @@
                 @endforeach
                 @endif
             </tr>
+            @if($rowKey == 0)
+            <tr>
+                <td colspan="{{count($row)}}">
+                    <div class="d-flex justify-content-center">
+                        <h2>Step 4</h2>
+                    </div>
+                    <div class="d-flex justify-content-center">
+                        <button type="submit" class="btn btn-primary">Make a prediction!</button>
+                    </div>
+                </td>
 
+            </tr>
+            @endif
             @endforeach
         </tbody>
     </table>
